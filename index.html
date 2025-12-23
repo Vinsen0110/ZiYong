@@ -260,7 +260,8 @@
     </div>
 
     <script>
-        const API_URL = "https://api.bltcy.ai/v1/images/edits";
+        // === 更改：使用 Generations 接口 ===
+        const API_URL = "https://api.bltcy.ai/v1/images/generations";
         const MAX_SLOTS = 9;
         let imageSlots = new Array(MAX_SLOTS).fill(null);
         let currentActiveSlot = -1; 
@@ -552,32 +553,102 @@
         zoomContainer.addEventListener('dblclick', resetZoom);
         function setBatchSize(num) { batchSize = num; document.querySelectorAll('.batch-btn').forEach(btn => { if(parseInt(btn.dataset.val) === num) btn.className = "batch-btn active-btn flex-1 py-2 text-xs rounded transition"; else btn.className = "batch-btn inactive-btn bg-gray-100 border-gray-300 text-gray-500 dark:bg-[#18181b] dark:border-[#27272a] dark:text-gray-400 flex-1 py-2 text-xs rounded transition"; }); }
 
+        // === 辅助函数：将文件转换为 Base64 字符串 ===
+        const fileToBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        // === 核心逻辑修改：使用 JSON 请求 ===
         async function submitTask() {
             const apiKey = localStorage.getItem('nano_api_key');
             if (!apiKey) { openSettings(); return; }
+            
             const prompt = document.getElementById('prompt-input').value.trim();
-            const ratio = document.getElementById('ratio-select').value; const size = document.getElementById('size-select').value; const modelName = document.getElementById('model-input').value;
+            const ratio = document.getElementById('ratio-select').value; 
+            const size = document.getElementById('size-select').value; 
+            const modelName = document.getElementById('model-input').value;
+            
             const btn = document.getElementById('generate-btn'), icon = document.getElementById('loading-icon');
             if (!prompt) { alert("请输入提示词"); return; }
+            
             btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-not-allowed'); icon.classList.remove('hidden'); btn.querySelector('span').innerText = "生成中...";
-            const validImages = imageSlots.filter(item => item !== null); originalRefImage = null;
-            if (validImages.length > 0) { const reader = new FileReader(); reader.onload = (e) => { originalRefImage = e.target.result; }; reader.readAsDataURL(validImages[0]); }
+            btn.classList.add('opacity-70', 'cursor-not-allowed'); 
+            icon.classList.remove('hidden'); 
+            btn.querySelector('span').innerText = "生成中...";
+
+            // 1. 处理图片：转换为 Base64
+            const validImages = imageSlots.filter(item => item !== null); 
+            originalRefImage = null;
+            let base64Images = [];
+
+            if (validImages.length > 0) {
+                try {
+                    // 读取第一张图作为本地预览对比图
+                    const reader = new FileReader(); 
+                    reader.onload = (e) => { originalRefImage = e.target.result; }; 
+                    reader.readAsDataURL(validImages[0]);
+                    // 转换所有图片为 Base64
+                    base64Images = await Promise.all(validImages.map(fileToBase64));
+                } catch (e) {
+                    alert("图片处理失败");
+                    btn.disabled = false; return;
+                }
+            }
+
             const startTime = Date.now();
-            const formData = new FormData();
-            formData.append('model', modelName); formData.append('prompt', prompt); formData.append('aspect_ratio', ratio); formData.append('image_size', size); formData.append('n', batchSize); formData.append('response_format', 'url');
-            validImages.forEach((file) => formData.append('image', file));
+
+            // 2. 构建 JSON Payload
+            const payload = {
+                model: modelName,
+                prompt: prompt,
+                aspect_ratio: ratio,
+                image_size: size,
+                n: batchSize,
+                response_format: 'url'
+            };
+
+            // 如果有图片，添加到 payload (字段名为 image, 类型为 array[string])
+            if (base64Images.length > 0) {
+                payload.image = base64Images; 
+            }
+
             try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}` }, body: formData });
-                const data = await response.json(); const duration = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+                // 3. 发送 JSON 请求
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json' // 必须指定 JSON 类型
+                    }, 
+                    body: JSON.stringify(payload) 
+                });
+
+                const data = await response.json(); 
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+                
                 if (!response.ok) throw new Error(data.error?.message || "请求失败");
+                
+                // 兼容返回格式：可能是 { data: [...] } 或 { url: "..." }
                 const results = data.data || (data.url ? [{url: data.url}] : []);
+                
                 if (results.length > 0) { 
                     setMainImage(results[0].url, duration, originalRefImage); 
                     results.forEach(img => addToHistory(img.url, prompt, duration)); 
-                } else { alert("生成成功，但未返回图片链接"); }
-            } catch (err) { console.error(err); alert("错误: " + err.message); } 
-            finally { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); icon.classList.add('hidden'); btn.querySelector('span').innerText = "✨ 立即生成"; }
+                } else { 
+                    alert("生成成功，但未返回图片链接"); 
+                }
+            } catch (err) { 
+                console.error(err); 
+                alert("错误: " + err.message); 
+            } finally { 
+                btn.disabled = false; 
+                btn.classList.remove('opacity-70', 'cursor-not-allowed'); 
+                icon.classList.add('hidden'); 
+                btn.querySelector('span').innerText = "✨ 立即生成"; 
+            }
         }
 
         function setMainImage(url, duration = "", refSrc = null) {
@@ -703,9 +774,6 @@
             try { const r = await fetch(currentMainImageUrl); const b = await r.blob(); const f = new File([b], `import_${Date.now()}.jpg`, { type: b.type }); imageSlots[emptyIndex] = f; renderSlots(); } catch(e) { alert("导入失败"); }
         }
     </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"9166d45131dc47f3a1583bb5909a68ea","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-
-
-
-
