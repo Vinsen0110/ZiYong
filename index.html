@@ -73,20 +73,14 @@
                     <div class="flex items-center gap-2 text-purple-500 font-bold text-sm uppercase tracking-wider">
                         <i class="fa-solid fa-sliders"></i> 生成设置
                     </div>
-                    <div class="relative w-40" id="custom-model-dropdown">
+                    
+                    <div class="relative w-40">
                         <input type="hidden" id="model-input" value="nano-banana-2-4k">
-                        <div onclick="toggleModelDropdown(event)" id="dropdown-trigger" class="w-full flex justify-between items-center bg-gray-100 dark:bg-[#18181b] border border-transparent dark:border-[#27272a] rounded-lg px-3 py-1.5 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-[#27272a]">
+                        <div class="w-full flex justify-center items-center bg-gray-100 dark:bg-[#18181b] border border-transparent dark:border-[#27272a] rounded-lg px-3 py-1.5">
                             <span id="current-model-text" class="text-xs font-bold font-mono text-gray-700 dark:text-gray-300">nano-banana-2-4K</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] text-gray-500 dropdown-arrow"></i>
                         </div>
-                        <div id="dropdown-options" class="hidden absolute top-full right-0 mt-2 w-48 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-xl shadow-xl overflow-hidden z-50 p-1">
-                            <div onclick="selectModel('nano-banana-2-4k', 'nano-banana-2-4k')" class="model-option flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-indigo-50 dark:hover:bg-[#27272a] group transition" data-val="nano-banana-2-4k">
-                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">nano-banana-2-4k</span>
-                                <i class="fa-solid fa-check text-indigo-500 text-xs opacity-100 check-icon"></i>
-                            </div>
-                            </div>
                     </div>
-                </div>
+                    </div>
 
                 <div class="space-y-2">
                     <div class="flex justify-between items-center">
@@ -466,13 +460,8 @@
         function unlockPrompt() { manualUnlock = true; updatePromptLockState(); }
 
         function toggleModelDropdown(event) {
+            // 已移除下拉功能，此函数保留防止报错，但不再执行逻辑
             if(event) event.stopPropagation();
-            const container = document.getElementById('custom-model-dropdown');
-            const options = document.getElementById('dropdown-options');
-            const trigger = document.getElementById('dropdown-trigger');
-            container.classList.toggle('dropdown-open'); options.classList.toggle('hidden');
-            if (container.classList.contains('dropdown-open')) { trigger.classList.add('glow-effect'); trigger.classList.remove('bg-gray-100', 'dark:bg-[#18181b]'); } 
-            else { trigger.classList.remove('glow-effect'); trigger.classList.add('bg-gray-100', 'dark:bg-[#18181b]'); }
         }
         function selectModel(val, text) {
             document.getElementById('model-input').value = val;
@@ -482,17 +471,11 @@
             // === 修改点：移除对 nano-banana-hd 的判断，始终允许选择分辨率 ===
             sizeSelect.disabled = false;
             
-            document.querySelectorAll('.model-option').forEach(opt => {
-                const check = opt.querySelector('.check-icon');
-                if(opt.dataset.val === val) { check.classList.remove('opacity-0'); check.classList.add('opacity-100'); opt.classList.add('bg-indigo-50', 'dark:bg-[#27272a]'); } 
-                else { check.classList.add('opacity-0'); check.classList.remove('opacity-100'); opt.classList.remove('bg-indigo-50', 'dark:bg-[#27272a]'); }
-            });
-            toggleModelDropdown(); renderSlots(); updatePromptLockState();
+            // 下拉菜单逻辑已移除，此处仅更新值
+            renderSlots(); updatePromptLockState();
         }
         function closeDropdownOnClickOutside(event) {
-            const container = document.getElementById('custom-model-dropdown');
-            const options = document.getElementById('dropdown-options'); const trigger = document.getElementById('dropdown-trigger');
-            if (container && !container.contains(event.target)) { container.classList.remove('dropdown-open'); options.classList.add('hidden'); trigger.classList.remove('glow-effect'); trigger.classList.add('bg-gray-100', 'dark:bg-[#18181b]'); }
+            // 已移除下拉菜单逻辑
         }
         function toggleTheme() {
             const html = document.documentElement;
@@ -771,6 +754,5 @@
             try { const r = await fetch(currentMainImageUrl); const b = await r.blob(); const f = new File([b], `import_${Date.now()}.jpg`, { type: b.type }); imageSlots[emptyIndex] = f; renderSlots(); } catch(e) { alert("导入失败"); }
         }
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"9166d45131dc47f3a1583bb5909a68ea","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
