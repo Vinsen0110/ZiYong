@@ -11,7 +11,7 @@
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; overscroll-behavior: none; }
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
         .custom-input { transition: all 0.2s; }
         .custom-input:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         .custom-input:read-only { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; border-color: #e5e7eb; }
@@ -19,19 +19,22 @@
         select:disabled { background-color: #e5e7eb; color: #9ca3af; cursor: not-allowed !important; }
         .dark select:disabled { background-color: #27272a; color: #52525b; }
         select { cursor: pointer !important; }
+        
+        /* 滚动条美化 */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+        
         .active-btn { background-color: #a855f7; color: white; border-color: #a855f7; font-weight: bold; }
         
-        /* 修复滑块交互的关键样式 */
+        /* 滑块交互样式修复 */
         #zoom-container { overflow: hidden; cursor: grab; position: relative; touch-action: none; }
         #zoom-container:active { cursor: grabbing; }
         .compare-slider { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(255, 255, 255, 0.8); z-index: 40; cursor: ew-resize; box-shadow: 0 0 10px rgba(0,0,0,0.5); touch-action: none; }
-        /* pointer-events: auto 确保手机能点中 */
-        .compare-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; box-shadow: 0 2px 6px rgba(0,0,0,0.4); pointer-events: auto; z-index: 50; }
-
+        /* 关键：pointer-events: auto 确保手机能点中圆点 */
+        .compare-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: auto; z-index: 50; }
+        
         .task-checkbox { width: 16px; height: 16px; accent-color: #a855f7; cursor: pointer; }
         .resizer-x { width: 4px; cursor: col-resize; background: transparent; z-index: 50; }
         .resizer-y { height: 4px; cursor: row-resize; background: transparent; z-index: 50; }
@@ -54,43 +57,30 @@
         .option-disabled { opacity: 0.5; pointer-events: none; cursor: not-allowed; background-color: #f3f4f6; }
         .dark .option-disabled { background-color: #27272a; }
 
-        /* Mobile specific styles */
+        /* 移动端适配：取消固定高度，改为自然流式布局 */
         @media (max-width: 768px) {
-            .mobile-hidden { display: none !important; }
-            /* 强制全屏显示 */
-            .mobile-view { 
-                position: absolute; 
-                top: 0; left: 0; 
-                width: 100% !important; 
-                height: 100% !important; 
-                z-index: 10;
-                background-color: inherit;
-                padding-bottom: 64px; /* 为底部导航栏留出空间 */
-                display: flex !important;
-                flex-direction: column !important;
-            }
-            #main-container { position: relative; display: block; height: calc(100vh - 56px); } /* 减去头部高度 */
             .resizer-x, .resizer-y { display: none; }
-            /* 修复历史记录列表在手机上的显示 */
-            #history-list {
-                flex-direction: column !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                padding-bottom: 80px !important;
-            }
-            .history-item {
-                width: 100% !important;
-                height: auto !important;
-                aspect-ratio: 16/9 !important;
-                margin-bottom: 16px !important;
-                flex-shrink: 0 !important;
-            }
+            /* 强制重置高度，允许滚动 */
+            #main-container { height: auto !important; overflow: visible !important; }
+            /* 左侧面板在手机上是第一部分，自然高度 */
+            #left-panel { width: 100% !important; height: auto !important; max-width: none !important; overflow: visible !important; border-right: none; border-bottom: 1px solid #e5e7eb; }
+            .dark #left-panel { border-bottom-color: #27272a; }
+            /* 右侧面板在手机上是第二部分 */
+            #right-panel { width: 100% !important; height: auto !important; overflow: visible !important; display: flex !important; flex-direction: column !important; }
+            /* 预览区在手机上给一个固定高度，保证能看见 */
+            #preview-section-wrapper { height: 500px !important; flex: none !important; border-bottom: 1px solid #e5e7eb; }
+            .dark #preview-section-wrapper { border-bottom-color: #27272a; }
+            /* 任务列表在手机上高度自动，撑开页面 */
+            #task-panel { height: auto !important; min-height: 300px !important; max-height: none !important; }
+            /* 历史列表改为网格或纵向列表 */
+            #history-list { flex-direction: column; overflow-x: hidden; overflow-y: visible; gap: 1rem; padding-bottom: 3rem; }
+            .history-item { width: 100% !important; height: auto !important; aspect-ratio: 16/9; margin-right: 0; }
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-gray-50 text-gray-800 dark:bg-[#09090b] dark:text-[#e4e4e7]" onclick="closeDropdownOnClickOutside(event)">
+<body class="md:h-screen md:overflow-hidden min-h-screen overflow-y-auto bg-gray-50 text-gray-800 dark:bg-[#09090b] dark:text-[#e4e4e7]" onclick="closeDropdownOnClickOutside(event)">
 
-    <header class="h-14 border-b border-gray-200 dark:border-[#27272a] bg-white dark:bg-[#09090b] flex items-center justify-between px-4 shrink-0 z-50 transition-colors">
+    <header class="h-14 border-b border-gray-200 dark:border-[#27272a] bg-white dark:bg-[#09090b] flex items-center justify-between px-4 shrink-0 z-50 sticky top-0 md:relative">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-white rounded-lg border border-gray-200 shadow-sm shrink-0 overflow-hidden">
                 <img src="https://raw.githubusercontent.com/Vinsen0110/Nano2-Pro-Zz/main/nanobanana.jpg" class="w-full h-full object-cover" alt="Logo" onerror="this.src='kitty.png'">
@@ -110,9 +100,9 @@
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden relative" id="main-container">
+    <div id="main-container" class="flex flex-col md:flex-row md:h-[calc(100vh-3.5rem)] w-full">
         
-        <aside id="left-panel" class="w-[360px] min-w-[280px] max-w-[600px] bg-white border-r border-gray-200 dark:bg-[#0c0c0e] dark:border-[#27272a] flex flex-col overflow-y-auto z-10 transition-colors md:block pb-20 md:pb-0 h-full md:h-auto mobile-view" data-tab="settings">
+        <aside id="left-panel" class="w-full md:w-[360px] min-w-[280px] max-w-[600px] shrink-0 bg-white dark:bg-[#0c0c0e] flex flex-col md:border-r border-gray-200 dark:border-[#27272a] z-10 transition-colors md:overflow-y-auto">
             <div class="p-5 space-y-3">
                 <div class="flex items-center justify-between relative z-50">
                     <div class="flex items-center gap-2 text-purple-500 font-bold text-sm uppercase tracking-wider">
@@ -195,7 +185,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="pt-4 pb-10">
+                <div class="pt-4 pb-10 md:pb-5">
                     <button onclick="submitTask()" id="generate-btn" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white font-bold py-3.5 rounded-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
                         <span class="text-base">✨ 立即生成</span><i id="loading-icon" class="fa-solid fa-circle-notch fa-spin hidden"></i>
                     </button>
@@ -205,9 +195,9 @@
 
         <div id="resizer-sidebar" class="resizer-x bg-gray-200 dark:bg-[#1f1f22]"></div>
 
-        <main id="right-panel" class="flex-1 flex flex-col min-w-0 bg-gray-100 dark:bg-black transition-colors md:block hidden">
+        <main id="right-panel" class="w-full md:flex-1 flex flex-col bg-gray-100 dark:bg-black transition-colors md:h-full md:overflow-hidden">
             
-            <div id="preview-section-wrapper" class="flex flex-col flex-1 overflow-hidden h-full w-full bg-gray-100 dark:bg-black transition-colors" data-tab="preview">
+            <div id="preview-section-wrapper" class="relative w-full md:flex-1 bg-gray-200 dark:bg-black transition-colors flex flex-col overflow-hidden">
                  <div class="h-12 border-b border-gray-200 dark:border-[#27272a] bg-white dark:bg-[#0c0c0e] flex items-center justify-between px-4 shrink-0 z-20 transition-colors">
                     <button onclick="importCurrentImage()" class="text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 transition" title="将当前图作为参考图">
                         <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">导入</span>
@@ -248,8 +238,8 @@
 
             <div id="resizer-tasklist" class="resizer-y bg-gray-200 dark:bg-[#1f1f22]"></div>
 
-            <div id="task-panel" class="h-[220px] min-h-[150px] max-h-[600px] bg-white dark:bg-[#0c0c0e] flex flex-col shrink-0 z-20 transition-colors pb-20 md:pb-0" data-tab="history">
-                <div class="px-4 py-2 flex items-center justify-between bg-gray-50 dark:bg-[#121214] border-b border-gray-100 dark:border-none">
+            <div id="task-panel" class="w-full bg-white dark:bg-[#0c0c0e] flex flex-col shrink-0 z-20 transition-colors md:h-[220px]">
+                <div class="px-4 py-2 flex items-center justify-between bg-gray-50 dark:bg-[#121214] border-b border-gray-100 dark:border-none sticky top-0 z-10">
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="select-all" class="task-checkbox" onchange="toggleSelectAll()">
                         <span id="task-list-title" class="text-xs font-bold text-gray-600 dark:text-gray-300 transition-colors">任务列表</span>
@@ -265,21 +255,6 @@
             </div>
         </main>
     </div>
-
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-[#0c0c0e] border-t border-gray-200 dark:border-[#27272a] z-50 flex items-center justify-around pb-safe">
-        <button onclick="switchMobileTab('settings')" class="mobile-tab-btn flex flex-col items-center justify-center gap-1 w-full h-full text-purple-500" data-target="settings">
-            <i class="fa-solid fa-sliders text-lg"></i>
-            <span class="text-[10px] font-bold">创作</span>
-        </button>
-        <button onclick="switchMobileTab('preview')" class="mobile-tab-btn flex flex-col items-center justify-center gap-1 w-full h-full text-gray-400" data-target="preview">
-            <i class="fa-solid fa-image text-lg"></i>
-            <span class="text-[10px] font-bold">预览</span>
-        </button>
-        <button onclick="switchMobileTab('history')" class="mobile-tab-btn flex flex-col items-center justify-center gap-1 w-full h-full text-gray-400" data-target="history">
-            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-            <span class="text-[10px] font-bold">历史</span>
-        </button>
-    </nav>
 
     <div id="editor-modal" class="fixed inset-0 bg-black/90 z-[100] hidden flex flex-col items-center justify-center">
         <div class="absolute top-6 flex gap-4 bg-white dark:bg-[#18181b] p-2 rounded-full shadow-2xl border border-gray-200 dark:border-[#27272a] z-50">
@@ -399,75 +374,10 @@
                 } catch (e) { console.error("History Load Error", e); }
             }
             updateModelRestrictions();
-            
-            // 初始化检查
-            if(window.innerWidth < 768) {
-                switchMobileTab('settings');
-            }
         });
 
-        // 修复：更新 Tab 切换逻辑以适配新结构
-        function switchMobileTab(target) {
-            if(window.innerWidth >= 768) return; 
-
-            const panels = {
-                'settings': document.getElementById('left-panel'),
-                'preview': document.getElementById('preview-section-wrapper'),
-                'history': document.getElementById('task-panel')
-            };
-            const rightPanel = document.getElementById('right-panel');
-
-            // Reset buttons
-            document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
-                btn.classList.remove('text-purple-500');
-                btn.classList.add('text-gray-400');
-            });
-            document.querySelector(`.mobile-tab-btn[data-target="${target}"]`).classList.add('text-purple-500');
-            document.querySelector(`.mobile-tab-btn[data-target="${target}"]`).classList.remove('text-gray-400');
-
-            // 逻辑更新：处理 right-panel 的显示隐藏
-            if (target === 'settings') {
-                document.getElementById('left-panel').classList.remove('mobile-hidden');
-                document.getElementById('left-panel').classList.add('mobile-view');
-                rightPanel.classList.add('hidden'); // 隐藏右侧大容器
-            } else {
-                document.getElementById('left-panel').classList.add('mobile-hidden');
-                document.getElementById('left-panel').classList.remove('mobile-view');
-                rightPanel.classList.remove('hidden'); // 显示右侧大容器
-                rightPanel.classList.add('mobile-view'); // 确保右侧容器全屏
-                
-                // 在右侧容器内切换
-                if (target === 'preview') {
-                    document.getElementById('preview-section-wrapper').classList.remove('hidden');
-                    document.getElementById('preview-section-wrapper').classList.add('flex'); // 确保 flex 布局
-                    document.getElementById('task-panel').classList.add('hidden');
-                    document.getElementById('task-panel').classList.remove('flex');
-                } else {
-                    document.getElementById('preview-section-wrapper').classList.add('hidden');
-                    document.getElementById('preview-section-wrapper').classList.remove('flex');
-                    document.getElementById('task-panel').classList.remove('hidden');
-                    document.getElementById('task-panel').classList.add('flex', 'mobile-view'); // 确保任务面板全屏
-                }
-            }
-        }
+        // 移除所有 Tab 切换逻辑，简化 Resizing
         
-        // 监听屏幕尺寸变化
-        window.addEventListener('resize', () => {
-            if(window.innerWidth >= 768) {
-                // Desktop Reset
-                document.getElementById('left-panel').classList.remove('mobile-hidden', 'mobile-view');
-                document.getElementById('right-panel').classList.remove('hidden', 'mobile-view');
-                document.getElementById('preview-section-wrapper').classList.remove('hidden');
-                document.getElementById('preview-section-wrapper').classList.add('flex');
-                document.getElementById('task-panel').classList.remove('hidden', 'mobile-view');
-                document.getElementById('task-panel').classList.add('flex');
-            } else {
-                const activeBtn = document.querySelector('.mobile-tab-btn.text-purple-500');
-                if(!activeBtn) switchMobileTab('settings');
-                else switchMobileTab(activeBtn.dataset.target);
-            }
-        });
-
         function fillApiUrl(url) {
             document.getElementById('modal-api-url').value = url;
             const input = document.getElementById('modal-api-url');
@@ -584,7 +494,8 @@
             else if(tool === 'text') canvas.style.cursor = 'text';
             else canvas.style.cursor = 'crosshair';
         }
-        // Helper for touch events
+        
+        // 触摸和鼠标支持
         function getEvtX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
         function getEvtY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
 
@@ -888,7 +799,12 @@
                 if (allResults.length > 0) { 
                     setMainImage(allResults[0].url, duration, originalRefImage); 
                     allResults.forEach(img => addToHistory(img.url, prompt, duration)); 
-                    if(window.innerWidth < 768) switchMobileTab('preview'); 
+                    // 手机端自动滚动到预览区
+                    if(window.innerWidth < 768) {
+                        setTimeout(() => {
+                            document.getElementById('preview-section-wrapper').scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    }
                 } else { 
                     alert("生成失败，请检查设置或重试"); 
                 }
@@ -929,7 +845,10 @@
                     const decPrompt = decodeURIComponent(item.dataset.prompt); 
                     setMainImage(url, duration); 
                     document.getElementById('prompt-input').value = decPrompt;
-                    if(window.innerWidth < 768) switchMobileTab('preview'); // Auto switch
+                    // 手机端自动滚动
+                    if(window.innerWidth < 768) {
+                        document.getElementById('preview-section-wrapper').scrollIntoView({ behavior: 'smooth' });
+                    }
                 } 
             };
             item.innerHTML = `
