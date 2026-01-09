@@ -28,11 +28,11 @@
         
         .active-btn { background-color: #a855f7; color: white; border-color: #a855f7; font-weight: bold; }
         
-        /* 滑块交互样式修复 */
-        #zoom-container { overflow: hidden; cursor: grab; position: relative; touch-action: none; }
+        /* 预览区容器：取消 touch-action: none 以允许默认滚动，JS会动态控制 */
+        #zoom-container { overflow: hidden; cursor: grab; position: relative; }
         #zoom-container:active { cursor: grabbing; }
+        
         .compare-slider { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(255, 255, 255, 0.8); z-index: 40; cursor: ew-resize; box-shadow: 0 0 10px rgba(0,0,0,0.5); touch-action: none; }
-        /* 关键：pointer-events: auto 确保手机能点中圆点 */
         .compare-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: auto; z-index: 50; }
         
         .task-checkbox { width: 16px; height: 16px; accent-color: #a855f7; cursor: pointer; }
@@ -57,22 +57,16 @@
         .option-disabled { opacity: 0.5; pointer-events: none; cursor: not-allowed; background-color: #f3f4f6; }
         .dark .option-disabled { background-color: #27272a; }
 
-        /* 移动端适配：取消固定高度，改为自然流式布局 */
         @media (max-width: 768px) {
             .resizer-x, .resizer-y { display: none; }
-            /* 强制重置高度，允许滚动 */
             #main-container { height: auto !important; overflow: visible !important; }
-            /* 左侧面板在手机上是第一部分，自然高度 */
             #left-panel { width: 100% !important; height: auto !important; max-width: none !important; overflow: visible !important; border-right: none; border-bottom: 1px solid #e5e7eb; }
             .dark #left-panel { border-bottom-color: #27272a; }
-            /* 右侧面板在手机上是第二部分 */
             #right-panel { width: 100% !important; height: auto !important; overflow: visible !important; display: flex !important; flex-direction: column !important; }
-            /* 预览区在手机上给一个固定高度，保证能看见 */
+            /* 预览区高度 */
             #preview-section-wrapper { height: 500px !important; flex: none !important; border-bottom: 1px solid #e5e7eb; }
             .dark #preview-section-wrapper { border-bottom-color: #27272a; }
-            /* 任务列表在手机上高度自动，撑开页面 */
             #task-panel { height: auto !important; min-height: 300px !important; max-height: none !important; }
-            /* 历史列表改为网格或纵向列表 */
             #history-list { flex-direction: column; overflow-x: hidden; overflow-y: visible; gap: 1rem; padding-bottom: 3rem; }
             .history-item { width: 100% !important; height: auto !important; aspect-ratio: 16/9; margin-right: 0; }
         }
@@ -211,7 +205,7 @@
                     <div class="absolute top-4 left-4 z-30 flex items-center gap-4 bg-white/80 dark:bg-[#18181b]/80 backdrop-blur rounded-lg px-3 py-1.5 border border-gray-200 dark:border-[#27272a] shadow-sm">
                         <span class="text-xs font-bold text-gray-800 dark:text-white">Preview</span>
                         <div class="w-[1px] h-3 bg-gray-300 dark:bg-gray-600"></div>
-                        <span class="text-[10px] text-gray-500 dark:text-gray-400">滚轮缩放 / 拖拽 / 双击复位</span>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400">双指捏合缩放 / 拖拽</span>
                         <div class="w-[1px] h-3 bg-gray-300 dark:bg-gray-600"></div>
                         <button onclick="clearMainPreview()" class="text-gray-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
                     </div>
@@ -670,14 +664,35 @@
 
         // Touch and Mouse support for Zoom/Pan
         zoomContainer.addEventListener('mousedown', startPan);
-        zoomContainer.addEventListener('touchstart', startPan, {passive: false});
+        
+        // 关键逻辑：双指缩放处理
+        let initialPinchDist = 0;
+        zoomContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#slider-handle')) { isSliding = true; e.preventDefault(); return; }
+            if (imgWrapper.classList.contains('hidden')) return;
+
+            // 两个手指，开始缩放
+            if (e.touches.length === 2) {
+                e.preventDefault(); 
+                initialPinchDist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+            } else if (e.touches.length === 1) {
+                // 单个手指
+                // 如果当前已经是放大状态，或者正在滑动滑块，则阻止默认滚动，进行平移
+                if (scale > 1 || isSliding) {
+                     e.preventDefault();
+                     startPan(e);
+                }
+                // 否则（Scale=1且没点滑块），不调用 preventDefault，允许页面上下滚动
+                else {
+                    startPan(e); // 仍记录起始点，但不阻止默认行为
+                }
+            }
+        }, {passive: false});
 
         function startPan(e) {
-            // 修复滑块交互：现在点击 handle 会设置 isSliding
-            if (e.target.closest('#slider-handle')) { isSliding = true; e.preventDefault(); return; } 
-            if (imgWrapper.classList.contains('hidden')) return; 
-            if(e.type === 'touchstart') e.preventDefault(); 
-            
             startX = getEvtX(e) - pointX; 
             startY = getEvtY(e) - pointY; 
             panning = true; 
@@ -687,11 +702,40 @@
         window.addEventListener('touchend', () => { panning = false; isSliding = false; });
 
         zoomContainer.addEventListener('mousemove', movePan);
-        zoomContainer.addEventListener('touchmove', movePan, {passive: false});
+        
+        zoomContainer.addEventListener('touchmove', (e) => {
+             // 双指缩放中
+            if (e.touches.length === 2) {
+                e.preventDefault(); // 阻止页面滚动
+                const dist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                if (initialPinchDist > 0) {
+                    const delta = dist / initialPinchDist;
+                    scale *= delta;
+                    scale = Math.min(Math.max(0.5, scale), 5); // 限制缩放倍数
+                    updateTransform();
+                    initialPinchDist = dist; // 重置基准距离，实现连续缩放
+                }
+            } else if (e.touches.length === 1) {
+                // 单指操作
+                if (scale > 1 || isSliding) {
+                    e.preventDefault(); // 放大状态下阻止页面滚动，优先平移图片
+                    movePan(e);
+                } else {
+                    // 未放大状态，不阻止默认行为（允许页面滚动），但如果只是小幅度抖动试图平移，movePan也会计算
+                    // 这里的策略是：不调用preventDefault允许滚动，但在movePan里更新位置 visually 
+                    // 实际效果：手指动，页面滚，图片位置不动（因为pointX没变多少）或者跟随页面
+                    // 为了体验最好：未放大时，纯粹允许滚动，不做pan逻辑更新
+                    if(panning) movePan(e);
+                }
+            }
+        }, {passive: false});
 
         function movePan(e) { 
             if (isSliding) { 
-                if(e.type === 'touchmove') e.preventDefault();
+                // 滑动对比条
                 const rect = imgWrapper.getBoundingClientRect(); 
                 let x = getEvtX(e) - rect.left; 
                 if (x < 0) x = 0; 
@@ -702,10 +746,13 @@
                 return; 
             } 
             if (!panning) return; 
-            if(e.type === 'touchmove') e.preventDefault();
-            pointX = getEvtX(e) - startX; 
-            pointY = getEvtY(e) - startY; 
-            updateTransform(); 
+            
+            // 只有放大时才允许平移，或者为了不跟页面滚动冲突
+            if (scale > 1) {
+                pointX = getEvtX(e) - startX; 
+                pointY = getEvtY(e) - startY; 
+                updateTransform(); 
+            }
         }
 
         zoomContainer.addEventListener('dblclick', resetZoom);
