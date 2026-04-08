@@ -2769,7 +2769,7 @@
                     }
                 }
 
-                btn.querySelector('span').innerText = `生成中 (0/${batchSize})...`;
+                btn.querySelector('span').innerText = `生成中（0/${batchSize}）`;
                 document.getElementById('loader-status').innerText = "AI 生成中";
                 document.getElementById('loader-detail').innerText = "正在请求 API...";
 
@@ -3396,7 +3396,7 @@
                             throw buildRunningHubRequestError(data, 'Task failed');
                         }
 
-                        if (loaderStatus) loaderStatus.innerText = 'Generating...';
+                        if (loaderStatus) loaderStatus.innerText = '生成中...';
                         if (loaderDetail) loaderDetail.innerText = `Status: ${status || 'RUNNING'} (ID: ${String(taskId).slice(0, 8)})`;
                         const progress = Math.min(95, 10 + Math.round(((attempt + 1) / maxAttempts) * 85));
                         if (loaderBar) loaderBar.style.width = `${progress}%`;
@@ -3463,8 +3463,8 @@
                         uploadedImageUrls = await Promise.all(validImages.map((file) => uploadImageToRunningHub(file, apiKey)));
                     }
 
-                    btn.querySelector('span').innerText = `Generating...(0/${batchSize})`;
-                    document.getElementById('loader-status').innerText = 'Generating...';
+                    btn.querySelector('span').innerText = `生成中（0/${batchSize}）`;
+                    document.getElementById('loader-status').innerText = '生成中...';
                     document.getElementById('loader-detail').innerText = 'Submitting task...';
 
                     const startTime = Date.now();
