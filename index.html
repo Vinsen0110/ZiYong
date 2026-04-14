@@ -1042,7 +1042,7 @@
                     -->
                     <button onclick="submitTask()" id="generate-btn"
                         class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 text-white font-bold py-3.5 rounded-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
-                        <span class="text-base">✨ 立即生成-0.3$</span><i id="loading-icon"
+                        <span class="text-base">✨ 立即生成-0.5$</span><i id="loading-icon"
                             class="fa-solid fa-circle-notch fa-spin hidden"></i>
                     </button>
                     
@@ -1252,7 +1252,19 @@
                         <div class="space-y-3 text-sm">
                             <div class="flex items-center justify-between gap-4 border-b border-dashed border-gray-200 pb-3 dark:border-[#2e2f36]">
                                 <span class="font-bold text-gray-800 dark:text-gray-200">Nano Banana Pro</span>
-                                <span class="font-black text-emerald-600 dark:text-emerald-400">0.3 $ / 张</span>
+                                <span class="font-black text-amber-600 dark:text-amber-400">分辨率计费</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-medium text-gray-700 dark:text-gray-300">1K</span>
+                                <span class="font-black text-emerald-600 dark:text-emerald-400">0.4 $ / 张</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 border-b border-dashed border-gray-200 pb-3 dark:border-[#2e2f36]">
+                                <span class="font-medium text-gray-700 dark:text-gray-300">2K</span>
+                                <span class="font-black text-emerald-600 dark:text-emerald-400">0.4 $ / 张</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-medium text-gray-700 dark:text-gray-300">4K</span>
+                                <span class="font-black text-emerald-600 dark:text-emerald-400">0.5 $ / 张</span>
                             </div>
                             <div class="flex items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
                                 <span>批量生成</span>
@@ -1526,6 +1538,7 @@
                     else { check.classList.add('opacity-0'); check.classList.remove('opacity-100'); opt.classList.remove('bg-indigo-50', 'dark:bg-[#27272a]'); }
                 });
                 toggleSizeDropdown();
+                updateGenerateButtonPrice();
             }
 
             function closeDropdownOnClickOutside(event) {
@@ -2628,8 +2641,14 @@
                 }
             }
 
+            function getUnitPriceBySize(size) {
+                const normalizedSize = String(size || '4K').trim().toUpperCase();
+                return normalizedSize === '1K' || normalizedSize === '2K' ? 0.4 : 0.5;
+            }
+
             function updateGenerateButtonPrice() {
-                const unitPrice = 0.3;
+                const size = document.getElementById('size-input')?.value;
+                const unitPrice = getUnitPriceBySize(size);
                 const total = unitPrice * batchSize;
                 const btnSpan = document.querySelector('#generate-btn span');
                 const loadingIcon = document.getElementById('loading-icon');
@@ -3274,7 +3293,8 @@
                 const btnSpan = document.querySelector('#generate-btn span');
                 const loadingIcon = document.getElementById('loading-icon');
                 if (btnSpan && loadingIcon && loadingIcon.classList.contains('hidden')) {
-                    const unitPrice = 0.3;
+                    const size = document.getElementById('size-input')?.value;
+                    const unitPrice = getUnitPriceBySize(size);
                     const total = unitPrice * batchSize;
                     btnSpan.innerText = `✨ 立即生成-${total.toFixed(1)}$`;
                 }
