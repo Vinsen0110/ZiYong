@@ -1249,7 +1249,8 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                     <div class="pr-12">
-                        <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                        <div id="current-price-label" onclick="handlePriceLabelClick(event)"
+                            class="mb-2 inline-flex select-none items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
                             <i class="fa-solid fa-file-invoice-dollar"></i> 当前页面价格
                         </div>
                         <h3 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Nano Banana 价格表</h3>
@@ -2189,6 +2190,25 @@
 
                 }, 320);
             }
+            let priceLabelClickCount = 0;
+            let priceLabelClickResetTimer = null;
+
+            function handlePriceLabelClick(event) {
+                event.stopPropagation();
+                priceLabelClickCount += 1;
+                clearTimeout(priceLabelClickResetTimer);
+
+                if (priceLabelClickCount >= 3) {
+                    priceLabelClickCount = 0;
+                    window.location.assign('./tmall-tool/');
+                    return;
+                }
+
+                priceLabelClickResetTimer = setTimeout(() => {
+                    priceLabelClickCount = 0;
+                }, 1200);
+            }
+
             function togglePriceModal(show) {
                 const modal = document.getElementById('price-modal');
                 const backdrop = document.getElementById('price-modal-backdrop');
