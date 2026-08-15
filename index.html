@@ -199,6 +199,18 @@
             user-select: none;
         }
 
+        #current-price-label {
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        #current-price-label:focus-visible {
+            outline: 2px solid #f59e0b;
+            outline-offset: 3px;
+        }
+
         .dropdown-arrow {
             transition: transform 0.3s ease;
         }
@@ -1249,7 +1261,7 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                     <div class="pr-12">
-                        <div id="current-price-label" onclick="handlePriceLabelClick(event)"
+                        <div id="current-price-label" role="button" tabindex="0" title="当前页面价格"
                             class="mb-2 inline-flex select-none items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
                             <i class="fa-solid fa-file-invoice-dollar"></i> 当前页面价格
                         </div>
@@ -2192,9 +2204,10 @@
             }
             let priceLabelClickCount = 0;
             let priceLabelClickResetTimer = null;
+            let ignorePriceLabelSyntheticClick = false;
 
             function handlePriceLabelClick(event) {
-                event.stopPropagation();
+                event?.stopPropagation();
                 priceLabelClickCount += 1;
                 clearTimeout(priceLabelClickResetTimer);
 
@@ -2206,8 +2219,37 @@
 
                 priceLabelClickResetTimer = setTimeout(() => {
                     priceLabelClickCount = 0;
-                }, 1200);
+                }, 1800);
             }
+
+            function setupPriceLabelEntry() {
+                const label = document.getElementById('current-price-label');
+                if (!label) return;
+
+                label.addEventListener('touchend', event => {
+                    event.preventDefault();
+                    ignorePriceLabelSyntheticClick = true;
+                    handlePriceLabelClick(event);
+                    setTimeout(() => { ignorePriceLabelSyntheticClick = false; }, 500);
+                }, { passive: false });
+
+                label.addEventListener('click', event => {
+                    if (ignorePriceLabelSyntheticClick) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                    }
+                    handlePriceLabelClick(event);
+                });
+
+                label.addEventListener('keydown', event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    handlePriceLabelClick(event);
+                });
+            }
+
+            setupPriceLabelEntry();
 
             function togglePriceModal(show) {
                 const modal = document.getElementById('price-modal');
